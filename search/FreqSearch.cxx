@@ -5,6 +5,7 @@
 #include <vector>
 #include <cmath>
 #include <iomanip>
+#include <fstream>
 #include "/Users/tuoyouli/cpplibrary/MyFun.h"
 #include "../include/matplotlibcpp.h"
 namespace plt = matplotlibcpp;
@@ -13,32 +14,48 @@ namespace plt = matplotlibcpp;
 void PrintError(int status);
 char* getCmdOption(char** begin, char** end, const std::string& option);
 bool cmdOptionExists(char** begin, char** end, const std::string& option);
+void ReadParFile(std::string ParfileName, double& PEPOCH, double& F0, double& FreqRange, double& FreqStep, int& BinNum);
 //
 
-/* global variables */
-/* TODO: read parameters from parfile */ 
-double MinFreq = 11.0846499395;
-double MaxFreq = 11.3046499395;
-double FreqStep= 1e-6;
-int MJDREFI = 51910;
-double MJDREFF = 0.00074287037037037;
-double PEpoch  = (51559.319 - MJDREFI -MJDREFF)*86400;
+///* global variables */
+double PEPOCH;
+double PEpoch;
+int MJDREFI;
+double MJDREFF;
+double F0 = 0;
 double F1 = 0;
 double F2 = 0;
-int bin_cs = 20;
+double FreqStep;
+double FreqRange;
+double MinFreq;
+double MaxFreq;
+int bin_cs;
 
 int main(int argc, char* argv[])
 {
     /* READ parse arguments */
     if(cmdOptionExists(argv, argv+argc, "-h"))
     {
-        std::cout << "########## HELP ############" << std::endl;
+        std::cout << "########## HELP ############" << std::endl << std::endl;
+        std::cout << "USAGE: " << std::endl;
+        std::cout << "        FreqSearch -f EventFile.Fits -p ParameterFile.par -o SaveProfile.FITS" << std::endl << std::endl;
+        std::cout << "########## END HELP ############" << std::endl;
     }
-//    char* InputEventFile = argv[1];
     char* InputEventFile = getCmdOption(argv, argv + argc, "-f");
+    char* ParameterFile  = getCmdOption(argv, argv + argc, "-p");
+    char* OutputProfileFile = getCmdOption(argv, argv + argc, "-o");
+
+    /* READ pulsar parameters */
+    if (ParameterFile)
+    {
+        ReadParFile(ParameterFile, PEPOCH, F0, FreqRange, FreqStep, bin_cs);
+        MinFreq = F0 - FreqRange;
+        MaxFreq = F0 + FreqRange;
+    }
+
     if (InputEventFile)
     {
-        std::cout << "############################" << std::endl;
+        std::cout << "########## Searching ############" << std::endl;
         std::cout << InputEventFile << std::endl;
     
         /* Read the Time of fits file */
@@ -59,11 +76,16 @@ int main(int argc, char* argv[])
         char InstrumentName[10]; 
         // NOTE: if "TDB" exist read "TDB", if not use "Time".
         
-        if (fits_get_colnum(fptr, CASEINSEN, "Time", &ColnumTime, &status)) PrintError(status);
+        if (fits_get_colnum(fptr, CASEINSEN, "TDB", &ColnumTime, &status)) PrintError(status);
         if (ffgky(fptr, TSTRING, "INSTRUME", &InstrumentName, NULL, &status)) PrintError(status);
         printf("Instrument is '%s'. \n", InstrumentName);
-    
-    
+
+        // GET THE MJD reference of Instrument
+        if (ffgky(fptr, TINT, "MJDREFI", &MJDREFI, NULL, &status)) PrintError(status);
+        std::cout << "MJDREFI = " << MJDREFI << std::endl;
+        if (ffgky(fptr, TDOUBLE, "MJDREFF", &MJDREFF, NULL, &status)) PrintError(status);
+        std::cout << "MJDREFF = " << MJDREFF << std::endl;
+        double PEpoch = (PEPOCH - MJDREFI -MJDREFF)*86400; // PEpoch is MET time and PEPOCH is MJD time
     
         std::cout << "Column number is " << ColnumTime << std::endl;
         if (fits_read_col(fptr, TDOUBLE, ColnumTime, 1, 1, LengthArrayTime, &doublenull, TimeArray, &anynull, &status)) PrintError(status);
