@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <fstream>
 
-void ReadParFile(std::string ParfileName, double& PEPOCH, double& F0, double& FreqRange, double& FreqStep, int& BinNum)
+void ReadParFile(std::string ParfileName, double& PEPOCH, double& F0, double& FreqRange, double& FreqStep, int& BinNum, std::string& TimeColumnName)
 {
     std::ifstream inFile;
     std::string STRING;
@@ -58,11 +58,17 @@ void ReadParFile(std::string ParfileName, double& PEPOCH, double& F0, double& Fr
             std::cout << STRING << ":" << ParValue << std::endl;
             FreqStep = ParValue;
         }
-        if (STRING == "BinNumber")
+        if (STRING == "BinNumer")
         {   
             inFile >> ParValue;
             std::cout << STRING << ":" << ParValue << std::endl;
             BinNum = ParValue;
+        }
+        if (STRING == "COLUMN_NAME")
+        {   
+            inFile >> StringParValue;
+            std::cout << STRING << ":" << StringParValue << std::endl;
+            TimeColumnName = StringParValue;
         }
     }
 }

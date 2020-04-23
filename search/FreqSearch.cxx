@@ -14,7 +14,7 @@ namespace plt = matplotlibcpp;
 void PrintError(int status);
 char* getCmdOption(char** begin, char** end, const std::string& option);
 bool cmdOptionExists(char** begin, char** end, const std::string& option);
-void ReadParFile(std::string ParfileName, double& PEPOCH, double& F0, double& FreqRange, double& FreqStep, int& BinNum);
+void ReadParFile(std::string ParfileName, double& PEPOCH, double& F0, double& FreqRange, double& FreqStep, int& BinNum, std::string& TimeColumnName);
 //
 
 ///* global variables */
@@ -30,6 +30,7 @@ double FreqRange;
 double MinFreq;
 double MaxFreq;
 int bin_cs;
+std::string TimeColumnName;
 
 int main(int argc, char* argv[])
 {
@@ -48,9 +49,18 @@ int main(int argc, char* argv[])
     /* READ pulsar parameters */
     if (ParameterFile)
     {
-        ReadParFile(ParameterFile, PEPOCH, F0, FreqRange, FreqStep, bin_cs);
-        MinFreq = F0 - FreqRange;
+        ReadParFile(ParameterFile, PEPOCH, F0, FreqRange, FreqStep, bin_cs, TimeColumnName);
+        if (F0-FreqRange < 0) 
+        {
+            MinFreq = 0;
+        }
+        else
+        {
+            MinFreq = F0 - FreqRange;
+        }
         MaxFreq = F0 + FreqRange;
+        printf("F0: %f\n", F0);
+        printf("FreqRange: %f\n", FreqRange);
     }
 
     if (InputEventFile)
@@ -74,9 +84,13 @@ int main(int argc, char* argv[])
     
         int ColnumTime;
         char InstrumentName[10]; 
-        // NOTE: if "TDB" exist read "TDB", if not use "Time".
+        char TimeColumnCharName[TimeColumnName.length()];
+        for (int i=0; i < sizeof(TimeColumnName); i++) 
+        {
+            TimeColumnCharName[i] = TimeColumnName[i];
+        }
         
-        if (fits_get_colnum(fptr, CASEINSEN, "TDB", &ColnumTime, &status)) PrintError(status);
+        if (fits_get_colnum(fptr, CASEINSEN, TimeColumnCharName, &ColnumTime, &status)) PrintError(status);
         if (ffgky(fptr, TSTRING, "INSTRUME", &InstrumentName, NULL, &status)) PrintError(status);
         printf("Instrument is '%s'. \n", InstrumentName);
 
@@ -87,7 +101,7 @@ int main(int argc, char* argv[])
         std::cout << "MJDREFF = " << MJDREFF << std::endl;
         double PEpoch = (PEPOCH - MJDREFI -MJDREFF)*86400; // PEpoch is MET time and PEPOCH is MJD time
     
-        std::cout << "Column number is " << ColnumTime << std::endl;
+        printf("Column number is %d ('%s') \n", ColnumTime, TimeColumnCharName);
         if (fits_read_col(fptr, TDOUBLE, ColnumTime, 1, 1, LengthArrayTime, &doublenull, TimeArray, &anynull, &status)) PrintError(status);
         // convert array to vector
         std::vector<double> TimeVector;
@@ -132,12 +146,10 @@ int main(int argc, char* argv[])
             Phi.clear();
             ProfileCounts.clear();
         }
+        for (int i; i<Chisquare.size(); i++)
+        {std::cout << Chisquare[i] << " " << std::endl;}
         plt::plot(FreqArray, Chisquare, "o-");
         plt::show();
-
-        std::cout << std::endl << "FINISH Frequency Search" << std::endl;
-    
-            plt::show();
     }
 
     return 0;
