@@ -50,9 +50,10 @@ int main(int argc, char* argv[])
     if (ParameterFile)
     {
         ReadParFile(ParameterFile, PEPOCH, F0, FreqRange, FreqStep, bin_cs, TimeColumnName);
-        if (F0-FreqRange < 0) 
+        if (F0-FreqRange <= 0) 
         {
-            MinFreq = 0;
+            MinFreq = 0.06;
+            printf("WARNING: The minimum value of the frequency search range is less than 0, pedged to 0.06 Hz.\n");
         }
         else
         {
