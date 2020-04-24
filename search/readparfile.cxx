@@ -58,7 +58,7 @@ void ReadParFile(std::string ParfileName, double& PEPOCH, double& F0, double& Fr
             std::cout << STRING << ":" << ParValue << std::endl;
             FreqStep = ParValue;
         }
-        if (STRING == "BinNumer")
+        if (STRING == "BIN_NUMBER")
         {   
             inFile >> ParValue;
             std::cout << STRING << ":" << ParValue << std::endl;
