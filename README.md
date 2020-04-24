@@ -12,7 +12,7 @@ PEPOCH          57979.425942180467246
 F0              0.107631040792164
 SEARCH_RANGE    1e-4
 SEARCH_STEP     1e-5
-BinNumer        20
+BIN_NUMBER      20
 COLUMN_NAME     TDB
 UNITS           TDB 
 ```
