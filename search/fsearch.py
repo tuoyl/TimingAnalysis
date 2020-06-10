@@ -5,6 +5,7 @@ from astropy.io import fits
 from tqdm import tqdm
 import argparse
 import sys
+import matplotlib.pyplot as plt
 
 
 def fsearch(filename, profilename, chisquarename, f0, fstep, frange, epoch, bin_profile, **kwargs):
@@ -26,15 +27,20 @@ def fsearch(filename, profilename, chisquarename, f0, fstep, frange, epoch, bin_
     print("EPOCH = ", PEPOCH)
     pepoch = (PEPOCH - MJDREFF - MJDREFI)*86400
     F0 = f0
-    if kwargs["f1"] in kwargs:
+    if "f1" in kwargs:
         f1 = kwargs["f1"]
+        if "f1step" in kwargs:
+            f1step = kwargs["f1step"]
+            f1range = kwargs["f1range"]
     else:
         f1 = 0
-    if kwargs["f2"] in kwargs:
+        f1step = 0 
+        frange = 0
+    if "f2" in kwargs:
         f2 = kwargs["f2"]
     else:
         f2 = 0
-    if kwargs["f3"] in kwargs:
+    if "f3" in kwargs:
         f3 = kwargs["f3"]
     else:
         f3 = 0
@@ -48,45 +54,84 @@ def fsearch(filename, profilename, chisquarename, f0, fstep, frange, epoch, bin_
     data = time
     if len(data)==0:
         raise IOError("Error: Data is empty")
-    #t0 = min(data)
     t0 = pepoch
-    #T0 = t0/86400.0 + MJDREFF + MJDREFI
-    #dt = t0 - pepoch 
-    #f0 = F0 + F1*dt + (1/2)*F2*(dt**2) + (1/6)*F3*(dt**3) + (1/24)*F4*(dt**4)
-    #f1 = F1 + F2*dt + (1/2)*F3*(dt**2) + (1/6)*F4*(dt**4)
-    #f2 = F2 + F3*dt + (1/2)*F4*(dt**2)
-    #f3 = F3 + F4*dt
-    #f4 = F4
 
     f = np.arange(f0-frange,f0+frange,fstep)
+    if f1 == 0:
+        f1search = f1
+    elif "f1step" in kwargs:
+        f1search = np.arange(f1-f1range, f1+f1range, f1step)
+    else:
+        f1search = f1
+        
     chi_square = np.array([])
     N = len(data)
     b = N/bin_profile
-    #for f1 in np.arange(-3.72e-10,-3.69e-10,0.5e-12):
-    for j in tqdm(range(0,len(f))):
-        phi_tmp = (data-t0)*f[j] + (1.0/2)*((data-t0)**2)*f1 + (1.0/6.0)*((data-t0)**3)*f2 + (1.0/24)*((data-t0)**4)*f3
-        phi_tmp -= np.floor(phi_tmp)
-        p_num = np.histogram(phi_tmp,bin_profile)[0]
-        #chi_square[j] = np.std(p_num)**2/np.mean(p_num)
-        chi_square = np.append(chi_square,(np.std(p_num)**2/np.mean(p_num)))
 
-    print '\n'
-    fbest = f[np.where(chi_square==max(chi_square))][0]
 
-    #save chisquare
-    with open(chisquarename, 'w') as fout:
-        for i in range(len(f)):
-            fout.write("%.12f %.6f \n"%(f[i], chi_square[i]))
+    if "f1range" in kwargs:
+        print("F1 search space: ", f1search)
+        print("F search space: ", f)
+        chi_square = np.zeros((len(f1search), len(f)))
+        for k in tqdm(range(0,len(f1search))):
+            for j in range(len(f)):
+                phi_tmp = (data-t0)*f[j] + (1.0/2)*((data-t0)**2)*f1search[k] + (1.0/6.0)*((data-t0)**3)*f2 + (1.0/24)*((data-t0)**4)*f3
+                phi_tmp -= np.floor(phi_tmp)
+                p_num = np.histogram(phi_tmp,bin_profile)[0]
+                chi_square[k][j] = np.std(p_num)**2/np.mean(p_num)
+
     
-    #profiles
-    print(data, t0, fbest)
-    phi_tmp = (data-t0)*fbest + (1.0/2)*((data-t0)**2)*f1 + (1.0/6.0)*((data-t0)**3)*f2 + (1.0/24)*((data-t0)**4)*f3
-    phi_tmp -= np.floor(phi_tmp)
-    profile_best, profile_x = np.histogram(phi_tmp,bin_profile)
-    profile_x = profile_x[:-1]
-    with open(profilename, 'w')as fout:
-        for i in range(len(profile_x)):
-            fout.write("%f %f %f\n"%(profile_x[i], profile_best[i], np.sqrt(profile_best[i])))
+        print '\n'
+        maxchi2_index = np.where(chi_square == np.ndarray.max(chi_square))
+        fbest = f[maxchi2_index[1][0]]
+        f1best = f1search[maxchi2_index[0][0]]
+        print(fbest, f1best)
+    
+        #save chisquare
+        with open(chisquarename, 'w') as fout:
+            for i in range(len(f1search)):
+                for j in range(len(f)):
+                    fout.write("%.12f %.12f %.6f \n"%(f[j], f1search[i], chi_square[i][j]))
+        
+        #profiles
+        print(data, t0, fbest)
+        phi_tmp = (data-t0)*fbest + (1.0/2)*((data-t0)**2)*f1best + (1.0/6.0)*((data-t0)**3)*f2 + (1.0/24)*((data-t0)**4)*f3
+        phi_tmp -= np.floor(phi_tmp)
+        profile_best, profile_x = np.histogram(phi_tmp,bin_profile)
+        profile_x = profile_x[:-1]
+        with open(profilename, 'w')as fout:
+            for i in range(len(profile_x)):
+                fout.write("%f %f %f\n"%(profile_x[i], profile_best[i], np.sqrt(profile_best[i])))
+
+    # ONLY SEARCH F0 parameter space
+    else:
+        print("F search space: ", f)
+        chi_square = np.zeros(len(f))
+        for j in tqdm(range(0,len(f))):
+            phi_tmp = (data-t0)*f[j] + (1.0/2)*((data-t0)**2)*f1 + (1.0/6.0)*((data-t0)**3)*f2 + (1.0/24)*((data-t0)**4)*f3
+            phi_tmp -= np.floor(phi_tmp)
+            p_num = np.histogram(phi_tmp,bin_profile)[0]
+            chi_square[j] = np.std(p_num)**2/np.mean(p_num)
+    
+        ########
+    
+        print '\n'
+        fbest = f[np.where(chi_square==max(chi_square))][0]
+    
+        #save chisquare
+        with open(chisquarename, 'w') as fout:
+            for i in range(len(f)):
+                fout.write("%.12f %.6f \n"%(f[i], chi_square[i]))
+        
+        #profiles
+        print(data, t0, fbest)
+        phi_tmp = (data-t0)*fbest + (1.0/2)*((data-t0)**2)*f1 + (1.0/6.0)*((data-t0)**3)*f2 + (1.0/24)*((data-t0)**4)*f3
+        phi_tmp -= np.floor(phi_tmp)
+        profile_best, profile_x = np.histogram(phi_tmp,bin_profile)
+        profile_x = profile_x[:-1]
+        with open(profilename, 'w')as fout:
+            for i in range(len(profile_x)):
+                fout.write("%f %f %f\n"%(profile_x[i], profile_best[i], np.sqrt(profile_best[i])))
 
 
 if __name__ == "__main__" :
@@ -97,6 +142,8 @@ if __name__ == "__main__" :
     parser.add_argument("-c","--chisquare",help="chisquare distribution file",type=str)
     parser.add_argument("-f0","--freqency", help="f0 for searching frequency", type=float)
     parser.add_argument("-f1","--freqderive", help="f1 for searching frequency", type=float)
+    parser.add_argument("-f1step",help="frequency derivative intervals for frequency search", type=float)
+    parser.add_argument("-f1range", help="frequency derivative range for searching", type=float)
     parser.add_argument("-f2","--freqsecderive", help="f2 for searching frequency", type=float)
     parser.add_argument("-f3","--freqthirdderive", help="f3 for searching frequency", type=float)
     parser.add_argument("-fstep",help="frequency intervals for frequency search", type=float)
@@ -113,13 +160,19 @@ if __name__ == "__main__" :
     epoch  = args.epoch
     binprofile = args.bins
     if args.freqderive:
-        f1 = args.freqderive
-    else:f1 = 0
+        freqderive = args.freqderive
+    else:freqderive = 0
     if args.freqsecderive:
-        f2 = args.freqsecderive
-    else:f2 = 0
+        freqsecderive = args.freqsecderive
+    else:freqsecderive = 0
     if args.freqthirdderive:
-        f3 = args.freqthirdderive
-    else:f3 = 0
+        freqthirdderive = args.freqthirdderive
+    else:freqthirdderive = 0
 
-    fsearch(filename, outprofile, outchisq, f0, fstep, frange, epoch, binprofile, f1=f1, f2=f2, f3=f3)
+    if args.f1range:
+        print("DO THIS")
+        f1range = args.f1range
+        f1step  = args.f1step
+        fsearch(filename, outprofile, outchisq, f0, fstep, frange, epoch, binprofile, f1=freqderive, f2=freqsecderive, f3=freqthirdderive, f1step=f1step, f1range=f1range)
+    else:
+        fsearch(filename, outprofile, outchisq, f0, fstep, frange, epoch, binprofile, f1=freqderive, f2=freqsecderive, f3=freqthirdderive)
