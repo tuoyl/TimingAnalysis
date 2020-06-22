@@ -78,7 +78,8 @@ def fsearch(filename, profilename, chisquarename, f0, fstep, frange, epoch, bin_
                 phi_tmp = (data-t0)*f[j] + (1.0/2)*((data-t0)**2)*f1search[k] + (1.0/6.0)*((data-t0)**3)*f2 + (1.0/24)*((data-t0)**4)*f3
                 phi_tmp -= np.floor(phi_tmp)
                 p_num = np.histogram(phi_tmp,bin_profile)[0]
-                chi_square[k][j] = np.std(p_num)**2/np.mean(p_num)
+                #chi_square[k][j] = np.std(p_num)**2/np.mean(p_num)
+                chi_square[k][j] = np.sum( (p_num - np.mean(p_num))**2 / np.mean(p_num) )
 
     
         print '\n'
@@ -111,7 +112,8 @@ def fsearch(filename, profilename, chisquarename, f0, fstep, frange, epoch, bin_
             phi_tmp = (data-t0)*f[j] + (1.0/2)*((data-t0)**2)*f1 + (1.0/6.0)*((data-t0)**3)*f2 + (1.0/24)*((data-t0)**4)*f3
             phi_tmp -= np.floor(phi_tmp)
             p_num = np.histogram(phi_tmp,bin_profile)[0]
-            chi_square[j] = np.std(p_num)**2/np.mean(p_num)
+            #chi_square[j] = np.std(p_num)**2/np.mean(p_num)
+            chi_square[j] = np.sum( (p_num - np.mean(p_num))**2 / np.mean(p_num) )
     
         ########
     
