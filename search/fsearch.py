@@ -82,7 +82,7 @@ def fsearch(filename, profilename, chisquarename, f0, fstep, frange, epoch, bin_
                 chi_square[k][j] = np.sum( (p_num - np.mean(p_num))**2 / np.mean(p_num) )
 
     
-        print '\n'
+        print('\n')
         maxchi2_index = np.where(chi_square == np.ndarray.max(chi_square))
         fbest = f[maxchi2_index[1][0]]
         f1best = f1search[maxchi2_index[0][0]]
@@ -117,7 +117,7 @@ def fsearch(filename, profilename, chisquarename, f0, fstep, frange, epoch, bin_
     
         ########
     
-        print '\n'
+        print('\n')
         fbest = f[np.where(chi_square==max(chi_square))][0]
     
         #save chisquare
