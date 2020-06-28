@@ -1,10 +1,4 @@
 #!/usr/bin/env python
-"""
-Definition of :class::class:`BinaryOrbitalCorrection`
-
-:class::class:`BinaryOrbitalCorrection` is used to calculate the time of arrival
-from the center of mass of the binary system.
-"""
 
 import numpy as np
 from astropy.io import fits
@@ -19,7 +13,7 @@ def orbit_cor(t, Porb, asini, e, omega, Tw):
     use numerical method to solve Kepler equation and calculate delay
 
     Parameters
-    ____________
+    -----------------
     t : array-like
         The time series without binary correction
 
@@ -39,7 +33,7 @@ def orbit_cor(t, Porb, asini, e, omega, Tw):
         The epoch of periastron passage (in units of seconds, same time system with parameter t)
         
     Returns 
-    ____________
+    -------------
     new_t : array-like
         The time series after the binary correction
 
