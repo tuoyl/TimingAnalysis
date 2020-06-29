@@ -1,4 +1,5 @@
 # TimingAnalysis
+[![Inline docs](http://inch-ci.org/github/{ORG-or-USERNAME}/{REPO-NAME}.svg?branch=master)](http://inch-ci.org/github/{ORG-or-USERNAME}/{REPO-NAME})
 
 ## Correction of Time of Arrival (ToA) in Binary System
 ## Pulsation Frequency search
