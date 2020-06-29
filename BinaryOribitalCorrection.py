@@ -4,13 +4,14 @@ from __future__ import division
 import numpy as np
 from astropy.io import fits
 
-__all__ = ['orbit_cor_bt', 'orbit_cor_deeter']
+__all__ = ['orbit_cor_bt', 'orbit_cor_deeter',
+        'fre_doppler_cor']
 
 #correcting_method = ["Reggio", "Sanna", "DT"]
 correcting_method = ["BT", "Deeter"]
 
 
-def orbit_cor_bt(t, Porb, asini, e, omega, Tw, gamma):
+def orbit_cor_bt(t, Porb, axsini, e, omega, Tw, gamma):
     """
     use numerical method to solve Kepler equation and calculate delay
     BT model (Blandford & Teukolsky, 1976)
@@ -23,7 +24,7 @@ def orbit_cor_bt(t, Porb, asini, e, omega, Tw, gamma):
     Porb : float
         The period of binary motion (in units of second)
 
-    asini : float
+    axsini : float
         Projected semi-major orbital axis (in units of light-sec)
 
     e : float 
@@ -44,7 +45,7 @@ def orbit_cor_bt(t, Porb, asini, e, omega, Tw, gamma):
         The time series after the binary correction
 
     """
-    x = asini
+    x = axsini
     gamma = 0 
 
     if e == 0:
@@ -76,7 +77,7 @@ def orbit_cor_bt(t, Porb, asini, e, omega, Tw, gamma):
     return new_t
 
 
-def orbit_cor_deeter(time, Porb, asini, e, omega, Tnod):
+def orbit_cor_deeter(time, Porb, axsini, e, omega, Tnod):
     """
     Correct the photon arrival times to the photon emission time
     Deeter model (see, e.g., Deeter et al. 1981)
@@ -89,7 +90,7 @@ def orbit_cor_deeter(time, Porb, asini, e, omega, Tnod):
     Porb : float
         The period of binary motion (in units of second)
 
-    asini : float
+    axsini : float
         Projected semi-major orbital axis (in units of light-sec)
 
     e : float 
@@ -107,7 +108,7 @@ def orbit_cor_deeter(time, Porb, asini, e, omega, Tnod):
         The photon emission time
 
     """
-    A = asini
+    A = axsini
     mean_anomaly = 2*np.pi*(time-Tnod)/Porb
 
     term1 = np.sin(mean_anomaly + omega) 
@@ -116,6 +117,68 @@ def orbit_cor_deeter(time, Porb, asini, e, omega, Tnod):
 
     t_em = time - A * (term1 + term2 + term3)
     return t_em
+
+def fre_doppler_cor(time, f0, f1, f2, axsini, Porb, omega, e, T_halfpi):
+    """
+    correct the observed freqency of neutron star, 
+    convert the frequency moduled by the binary orbital Doppler effect to
+    the intrinsic frequency of NS
+    (Galloway 2005)
+
+    Parameters
+    --------------
+    time : array-like
+        The epoch of observed time series
+
+    f0 : float
+        the observed frequency at reference epoch t0
+
+    f1 : float
+        the observed frequency derivative at reference epoch t0
+
+    f2 : float 
+        the observed frequency second derivative at reference epoch t0
+
+    axsini : float
+        Projected semi-major orbital axis (in units of light-sec)
+        
+    Porb : float
+        The period of binary motion (in units of second)
+
+    omega : float
+        Longitude of periastron
+
+    e : float 
+        The orbital eccentricity
+
+    T_halfpi : float
+       The mean longitude, with T_halfpi the epoch at which the mean longitude is pi/2 
+       (in units of second)
+
+    Returns
+    -------------
+    f_intri : array-like
+        The corrected intrinsic frequecy of neutron star
+
+    """
+    t0 = min(time) # set reference time as the start of time
+    f_spin = f0 + f1*(t-t0) + 0.5*f2*(t-t0)**2
+    f_dopp = _get_fdopp(time, f0, axsini, Porb, omega, e, T_halfpi)
+
+    f_intri = f_spin - f_dopp
+    return f_intri
+
+def _get_fdopp(time, f0, axsini, Porb, omega, e, T_halfpi):
+    """
+    calculate the frequency modulated by Doppler effect
+    """
+    l = 2* np.pi * (t-T_halfpi)/Porb + np.pi/2
+    g = e*np.sin(omega)
+    h = e*np.cos(omega)
+    f_dopp = (2 * np.pi * f0 * axsini / Porb) * (np.cos(l) + g*np.sin(2*l) + h*np.cos(2*l) )
+    return f_dopp
+
+
 
 if __name__ == "__main__":
     hdulist = fits.open("./testdata/P021100601401_he_screen.fits")
