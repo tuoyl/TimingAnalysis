@@ -76,7 +76,7 @@ def orbit_cor_bt(t, Porb, asini, e, omega, Tw, gamma):
     return new_t
 
 
-def orbit_cor_deeter(time, Porb, asini, e, omega, T):
+def orbit_cor_deeter(time, Porb, asini, e, omega, Tnod):
     """
     Correct the photon arrival times to the photon emission time
     Deeter model (see, e.g., Deeter et al. 1981)
@@ -98,7 +98,7 @@ def orbit_cor_deeter(time, Porb, asini, e, omega, T):
     omega : float
         Longitude of periastron
 
-    T : float 
+    Tnod : float 
         The epoch of ascending node passage (in units of seconds, same time system with parameter t)
 
     Returns 
@@ -108,7 +108,7 @@ def orbit_cor_deeter(time, Porb, asini, e, omega, T):
 
     """
     A = asini
-    mean_anomaly = 2*np.pi*(time-T)/Porb
+    mean_anomaly = 2*np.pi*(time-Tnod)/Porb
 
     term1 = np.sin(mean_anomaly + omega) 
     term2 = (e/2)*np.sin(2*mean_anomaly + omega)
