@@ -162,7 +162,7 @@ def fre_doppler_cor(time, f0, f1, f2, axsini, Porb, omega, e, T_halfpi):
 
     """
     t0 = min(time) # set reference time as the start of time
-    f_spin = f0 + f1*(t-t0) + 0.5*f2*(t-t0)**2
+    f_spin = f0 + f1*(time-t0) + 0.5*f2*(time-t0)**2
     f_dopp = _get_fdopp(time, f0, axsini, Porb, omega, e, T_halfpi)
 
     f_intri = f_spin - f_dopp
@@ -172,7 +172,7 @@ def _get_fdopp(time, f0, axsini, Porb, omega, e, T_halfpi):
     """
     calculate the frequency modulated by Doppler effect
     """
-    l = 2* np.pi * (t-T_halfpi)/Porb + np.pi/2
+    l = 2* np.pi * (time-T_halfpi)/Porb + np.pi/2
     g = e*np.sin(omega)
     h = e*np.cos(omega)
     f_dopp = (2 * np.pi * f0 * axsini / Porb) * (np.cos(l) + g*np.sin(2*l) + h*np.cos(2*l) )
@@ -183,3 +183,4 @@ def _get_fdopp(time, f0, axsini, Porb, omega, e, T_halfpi):
 if __name__ == "__main__":
     hdulist = fits.open("./testdata/P021100601401_he_screen.fits")
     time = hdulist[1].data.field("TDB")
+    _get_fdopp(time, 23, 104, 22*86400, 2, 0, 0)
