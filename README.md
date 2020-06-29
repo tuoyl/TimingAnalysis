@@ -1,5 +1,5 @@
 # TimingAnalysis
-![Codecov](https://img.shields.io/codecov/c/github/tuoyl/TimingAnalysis?flag=a&style=plastic&token=a1b2c3d4e5)
+
 ## Correction of Time of Arrival (ToA) in Binary System
 ## Pulsation Frequency search
 An Example of Parameter File:
